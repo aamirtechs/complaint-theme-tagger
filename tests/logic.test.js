@@ -46,3 +46,8 @@ test("custom taxonomy from JSON is honoured", () => {
   const r = L.tagComplaint({ text: "a zebra charge appeared" }, tax);
   assert.deepEqual(r.themes, ["billing-x"]);
 });
+test("the Spanish keyword pack tags synthetic Spanish complaints", () => {
+  const tax = L.parseTaxonomyJSON(require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "examples", "taxonomy-es.json"), "utf8"));
+  const r = L.tagComplaint({ text: "pagué y nunca prestaron el servicio, no hicieron nada" }, tax);
+  assert.deepEqual(r.themes, ["es-servicios-no-prestados"]);
+});
