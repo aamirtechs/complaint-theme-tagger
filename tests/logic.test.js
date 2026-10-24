@@ -46,3 +46,11 @@ test("custom taxonomy from JSON is honoured", () => {
   const r = L.tagComplaint({ text: "a zebra charge appeared" }, tax);
   assert.deepEqual(r.themes, ["billing-x"]);
 });
+
+test("applyOverrides removes a theme before download", () => {
+  const tagged = L.tagComplaints([{ text: "I was charged a fee and billed twice" }]);
+  assert.ok(tagged[0].themes.indexOf("fees-and-charges") !== -1);
+  const out = L.applyOverrides(tagged, [{ index: 0, themeId: "fees-and-charges" }]);
+  assert.equal(out[0].themes.indexOf("fees-and-charges"), -1);
+  assert.equal(out[0].matched["fees-and-charges"], undefined);
+});

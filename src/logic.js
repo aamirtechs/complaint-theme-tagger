@@ -63,6 +63,29 @@ function tagComplaint(complaint, taxonomy) {
   return { date: complaint.date || "", channel: complaint.channel || "", text: complaint.text || "", themes, matched, promiseVsOutcome, promiseMatches, outcomeMatches };
 }
 function tagComplaints(complaints, taxonomy) { return (complaints || []).map((c) => tagComplaint(c, taxonomy)); }
+
+/**
+ * Mark a theme not applicable for one complaint. Overrides live in page memory
+ * only; they are applied to the tagged rows before download.
+ * @param {Array} tagged - result of tagComplaints
+ * @param {Array} overrides - [{ index, themeId }]
+ */
+function applyOverrides(tagged, overrides) {
+  const map = {};
+  (overrides || []).forEach((o) => {
+    if (!o) return;
+    const key = String(o.index) + "|" + String(o.themeId);
+    map[key] = true;
+  });
+  return (tagged || []).map((row, index) => {
+    const themes = row.themes.filter((id) => !map[index + "|" + id]);
+    const matched = {};
+    Object.keys(row.matched || {}).forEach((id) => {
+      if (!map[index + "|" + id]) matched[id] = row.matched[id];
+    });
+    return Object.assign({}, row, { themes, matched });
+  });
+}
 function summarize(tagged) {
   const total = (tagged || []).length; const counts = {};
   for (const t of tagged || []) for (const id of t.themes) counts[id] = (counts[id] || 0) + 1;
@@ -88,6 +111,6 @@ function taggedToCSV(tagged) {
   }
   return lines.join("\n") + "\n";
 }
-const api = { DEFAULT_TAXONOMY, PROMISE_PHRASES, OUTCOME_PHRASES, defaultTaxonomy, parseTaxonomyJSON, parseCSV, parseComplaints, tagComplaint, tagComplaints, summarize, trendByMonth, monthOf, taggedToCSV };
+const api = { DEFAULT_TAXONOMY, PROMISE_PHRASES, OUTCOME_PHRASES, defaultTaxonomy, parseTaxonomyJSON, parseCSV, parseComplaints, tagComplaint, tagComplaints, applyOverrides, summarize, trendByMonth, monthOf, taggedToCSV };
 if (typeof module !== "undefined" && module.exports) { module.exports = api; }
 if (typeof window !== "undefined") { window.ComplaintThemeTagger = api; }
