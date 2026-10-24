@@ -41,6 +41,20 @@ test("tagged CSV includes matched keywords as evidence", () => {
   const csv = L.taggedToCSV(L.tagComplaints([{ date: "2026-01-01", channel: "chat", text: "charged a fee" }]));
   assert.match(csv, /matched_keywords/); assert.match(csv, /fees-and-charges: fee/);
 });
+test("trend CSV is tidy long form with theme, month, count", () => {
+  const tagged = L.tagComplaints([{ date: "2026-01-10", text: "charged a fee" }, { date: "2026-01-20", text: "cancel please" }, { date: "2026-02-02", text: "charged a fee" }]);
+  const csv = L.trendToCSV(L.trendByMonth(tagged));
+  const lines = csv.trim().split("\n");
+  assert.equal(lines[0], "theme,month,count");
+  assert.ok(lines.includes("cancellation-and-refunds,2026-01,1"));
+  assert.ok(lines.includes("fees-and-charges,2026-01,1"));
+  assert.ok(lines.includes("fees-and-charges,2026-02,1"));
+  assert.ok(lines.every((l) => l.split(",").length === 3));
+});
+test("trend CSV escapes like the tagged CSV does", () => {
+  const csv = L.trendToCSV([{ month: "2026-01", total: 1, counts: { 'weird,"theme': 2 } }]);
+  assert.ok(csv.includes('"weird,""theme"'));
+});
 test("custom taxonomy from JSON is honoured", () => {
   const tax = L.parseTaxonomyJSON('[{"id":"billing-x","label":"Billing X","keywords":["zebra charge"]}]');
   const r = L.tagComplaint({ text: "a zebra charge appeared" }, tax);

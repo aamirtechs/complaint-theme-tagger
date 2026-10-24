@@ -88,6 +88,16 @@ function taggedToCSV(tagged) {
   }
   return lines.join("\n") + "\n";
 }
-const api = { DEFAULT_TAXONOMY, PROMISE_PHRASES, OUTCOME_PHRASES, defaultTaxonomy, parseTaxonomyJSON, parseCSV, parseComplaints, tagComplaint, tagComplaints, summarize, trendByMonth, monthOf, taggedToCSV };
+function trendToCSV(trend) {
+  // tidy long form: one row per (theme, month) so it drops straight into a pivot table
+  const lines = ["theme,month,count"];
+  for (const m of trend || []) {
+    for (const id of Object.keys(m.counts || {}).sort()) {
+      lines.push([id, m.month, m.counts[id]].map(csvEscape).join(","));
+    }
+  }
+  return lines.join("\n") + "\n";
+}
+const api = { DEFAULT_TAXONOMY, PROMISE_PHRASES, OUTCOME_PHRASES, defaultTaxonomy, parseTaxonomyJSON, parseCSV, csvEscape, parseComplaints, tagComplaint, tagComplaints, summarize, trendByMonth, monthOf, taggedToCSV, trendToCSV };
 if (typeof module !== "undefined" && module.exports) { module.exports = api; }
 if (typeof window !== "undefined") { window.ComplaintThemeTagger = api; }
