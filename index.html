@@ -62,7 +62,7 @@
 
 <script src="src/logic.js"></script>
 <script>
-const $=(id)=>document.getElementById(id);let last=[];
+const $=(id)=>document.getElementById(id);let last=[];let overrides=[];
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
 $("taxonomy").value=JSON.stringify(ComplaintThemeTagger.defaultTaxonomy(),null,2);
 $("file").addEventListener("change",async(e)=>{if(e.target.files[0])$("paste").value=await e.target.files[0].text();});
@@ -72,13 +72,15 @@ $("run").addEventListener("click",()=>{
  const rows=ComplaintThemeTagger.parseComplaints($("paste").value);
  if(!rows.length){$("msg").textContent="Paste complaints or load the sample first.";return;}
  last=ComplaintThemeTagger.tagComplaints(rows,tax);
- const sum=ComplaintThemeTagger.summarize(last); const trend=ComplaintThemeTagger.trendByMonth(last);
+ const shown=ComplaintThemeTagger.applyOverrides(last,overrides);
+ const sum=ComplaintThemeTagger.summarize(shown); const trend=ComplaintThemeTagger.trendByMonth(shown);
  let h="<h3>Theme counts</h3><table><tr><th>Theme</th><th>Count</th><th>Percent</th></tr>"+sum.map(s=>"<tr><td>"+esc(s.theme)+"</td><td>"+s.count+"</td><td>"+s.percent+"%</td></tr>").join("")+"</table>";
  if(trend.length)h+="<h3>Trend by month</h3><pre class='out'>"+esc(JSON.stringify(trend,null,2))+"</pre>";
- h+="<h3>Tagged complaints</h3><table><tr><th>Text</th><th>Themes</th><th>Promise vs outcome</th><th>Evidence</th></tr>"+last.map(t=>"<tr><td>"+esc(t.text)+"</td><td>"+esc(t.themes.join(", "))+"</td><td>"+(t.promiseVsOutcome?"yes":"no")+"</td><td>"+esc(Object.values(t.matched).flat().join(", "))+"</td></tr>").join("")+"</table>";
+ h+="<h3>Tagged complaints</h3><table><tr><th>Text</th><th>Themes</th><th>Not applicable</th><th>Promise vs outcome</th><th>Evidence</th></tr>"+shown.map((t,i)=>"<tr><td>"+esc(t.text)+"</td><td>"+esc(t.themes.join(", "))+"</td><td>"+t.themes.map(id=>"<button data-i='"+i+"' data-t='"+esc(id)+"' class='na'>x "+esc(id)+"</button>").join(" ")+"</td><td>"+(t.promiseVsOutcome?"yes":"no")+"</td><td>"+esc(Object.values(t.matched).flat().join(", "))+"</td></tr>").join("")+"</table>";
  $("results").innerHTML=h;$("dl").disabled=false;$("msg").textContent="Tagged "+last.length+" complaints.";
+ $("results").querySelectorAll(".na").forEach(b=>b.addEventListener("click",()=>{overrides.push({index:Number(b.getAttribute("data-i")),themeId:b.getAttribute("data-t")});$("run").click();}));
 });
 function dl(name,text){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:"text/csv"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
-$("dl").addEventListener("click",()=>dl("tagged-complaints.csv",ComplaintThemeTagger.taggedToCSV(last)));
+$("dl").addEventListener("click",()=>dl("tagged-complaints.csv",ComplaintThemeTagger.taggedToCSV(ComplaintThemeTagger.applyOverrides(last,overrides))));
 </script>
 </body></html>
